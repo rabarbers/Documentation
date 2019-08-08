@@ -284,6 +284,7 @@ JSON-RPC Error codes will be in a JSON-Object in this format:
 - 1010 - Not found
 - 1015 - Wallet is password protected
 - 1016 - Invalid data
+- 1021 - No permission. You should configure `pascalcoin_daemon.ini` file with a `WHITELIST` including your external IPs, separated by coma, and set `RPC_ALLOWUSEPRIVATEKEYS=1` to allow it.
 
 ***********************************************************************************
 
