@@ -83,8 +83,11 @@ An "Account object" is a JSON object with information about an account. Fields a
 - `account` : Integer - Account number
 - `enc_pubkey` : HEXASTRING - Encoded public key value (See [decodepubkey](#decodepubkey))
 - `balance` : PASCURRENCY - Account balance
+- `balance_s` : String - Account balance as a string
 - `n_operation` : Integer - Operations made by this account _(Note: When an account receives a transaction, `n_operation` is not changed)_
-- `updated_b` Integer - Last block that updated this account. If equal to blockchain blocks count it means that it has pending operations to be included to the blockchain.  
+- `updated_b` : Integer - Last block that updated this account. If equal to blockchain blocks count it means that it has pending operations to be included to the blockchain.  
+- `updated_b_active_mode` : Integer - Last block that updated this account with an active transaction
+- `updated_b_passive_mode` : Integer - Last block that updated this account witah a passive transaction
 - `state` : String - Values can be `normal` or `listed`. When listed then account is for sale
 - `locked_until_block` : Integer - Until what block this account is locked. Only set if state is `listed`
 - `price` : PASCURRENCY - Price of account. Only set if state is `listed`
@@ -93,7 +96,8 @@ An "Account object" is a JSON object with information about an account. Fields a
 - `new_enc_pubkey` : HEXSTRING - Private buyers public key. Only set if state is `listed` and `private_sale` is true
 - `name` : String - Public name of account. Follows [PascalCoin64](#pascalcoin64-encoding) Encoding
 - `type` : Integer - Type of account. Valid values range from 0..65535
-
+- `seal` : HEXASTRING - The cryptographically secure account history (PIP-0029)
+- `data` : Array of Byte - max 32 bytes data set by account owner (PIP-0024)  
 ***********************************************************************************
 
 ### Block Object  
@@ -102,7 +106,9 @@ A "Block object" is a JSON object with information about a Blockchain's block. F
 - `block` : Integer - Block number
 - `enc_pubkey` : HEXASTRING - Encoded public key value used to init 5 created accounts of this block (See [decodepubkey](#decodepubkey) )
 - `reward` : PASCURRENCY - Reward of first account's block
+- `reward_s` : String - Reward of first account's block as a string
 - `fee` : PASCURRENCY - Fee obtained by operations
+- `fee_s` : PASCURRENCY - Fee obtained by operations as a string
 - `ver` : Integer - Pascal Coin protocol used
 - `ver_a` : Integer - Pascal Coin protocol available by the miner
 - `timestamp` : Integer - Unix timestamp  
@@ -141,6 +147,7 @@ An "Operation object" is a JSON object with information about an operation. Fiel
   - 7 = Change key (signed by another account)
   - 8 = Change account info
   - 9 = Multioperation (* New on Build 3.0 *)
+  - 10 = Data operation (* New on Build 4.0 *)
 =======
   - 4 = Account for sale
   - 6 = Account purchased
@@ -276,11 +283,13 @@ JSON-RPC Error codes will be in a JSON-Object in this format:
 
 #### List of usual error codes
 - 100 - Internal error
+- 101 - Method not implemented
 - 1001 - Method not found
 - 1002 - Invalid account
 - 1003 - Invalid block
 - 1004 - Invalid operation
 - 1005 - Invalid public key
+- 1006 - Invalid account name
 - 1010 - Not found
 - 1015 - Wallet is password protected
 - 1016 - Invalid data
@@ -292,15 +301,19 @@ JSON-RPC Error codes will be in a JSON-Object in this format:
   
 All calls will be using http transport protocol and JSON will be passed by POST.
 
+The node has a setting that controls which methods it supports. This is controlled by the `RPC_ALLOWUSEPRIVATEKEYS` setting in `pascalcoin_daemon.ini`. 
+
+The RPC calls fall into three basic groups. 
+
+- [Information, Support Functions and Raw Operations] These can be called without `RPC_ALLOWUSEPRIVATEKEYS` being set 
+- [Node Information and Control] - Cannot be called without `RPC_ALLOWUSEPRIVATEKEYS` being set, but doesn't require access to the wallet
+- [Wallet Actions] - Cannot be called without `RPC_ALLOWUSEPRIVATEKEYS` being set, but does require access to the wallet. 
+
+
 ### JSON-RPC methods list
 
-- [addnode](#addnode) - Adds a node to connect  
+#### Information, Support Functions and Raw Operations
 - [getaccount](#getaccount) - Get an account information
-- [getwalletaccounts](#getwalletaccounts) - Get available wallet accounts information (all or filtered by public key)
-- [getwalletaccountscount](#getwalletaccountscount) - Get number of available wallet accounts (total or filtered by public key)
-- [getwalletpubkeys](#getwalletpubkeys) - Get wallet public keys
-- [getwalletpubkey](#getwalletpubkey) - Search for a public key in the wallet
-- [getwalletcoins](#getwalletcoins) - Get wallet coins total balance (total or filtered by public key)
 - [getblock](#getblock) - Get block information
 - [getblocks](#getblocks) - Get a list of blocks (last n blocks, or from start to end)
 - [getblockcount](#getblockcount) - Get blockchain high in this node
@@ -311,6 +324,25 @@ All calls will be using http transport protocol and JSON will be passed by POST.
 - [getpendingscount](#getpendingscount) - Returns node pending buffer count (* New on Build 3.0 *)
 - [findoperation](#findoperation) - Finds an operation by "ophash"
 - [findaccounts](#findaccounts) - Find accounts by name/type
+- [encodepubkey](#encodepubkey) - Encodes a public key
+- [decodepubkey](#decodepubkey) - Decodes a public key
+- [payloadencrypt](#payloadencrypt) - Encrypts text
+- [operationsinfo](#operationsinfo) - Gets information about a signed operation without transfering it to network 
+- [executeoperations](#executeoperations) - Executes a signed operation and transfers it to the network
+
+#### Node Information and Control
+- [nodestatus](#nodestatus) - Returns node status
+- [getconnections](#getconnections) - Lists all active connections of this node
+- [stopnode](#stopnode) - Stops the node
+- [startnode](#startnode) - Starts the node
+- [addnode](#addnode) - Adds a node to connect  
+
+#### Wallet Actions
+- [getwalletaccounts](#getwalletaccounts) - Get available wallet accounts information (all or filtered by public key)
+- [getwalletaccountscount](#getwalletaccountscount) - Get number of available wallet accounts (total or filtered by public key)
+- [getwalletpubkeys](#getwalletpubkeys) - Get wallet public keys
+- [getwalletpubkey](#getwalletpubkey) - Search for a public key in the wallet
+- [getwalletcoins](#getwalletcoins) - Get wallet coins total balance (total or filtered by public key)
 - [sendto](#sendto) - Executes a transaction
 - [changekey](#changekey) - Executes a change key over an account
 - [changekeys](#changekeys) - Executes a change key over multiple accounts
@@ -324,20 +356,11 @@ All calls will be using http transport protocol and JSON will be passed by POST.
 - [signdelistaccountforsale](#signdelistaccountforsale) - Signs a List an account for sale (public or private) for cold wallets
 - [signbuyaccount](#signbuyaccount) - Signs a buy operation for cold wallets
 - [signchangeaccountinfo](#signchangeaccountinfo) - Signs a change account info for cold cold wallets
-- [operationsinfo](#operationsinfo) - Gets information about a signed operation without transfering it to network 
-- [executeoperations](#executeoperations) - Executes a signed operation and transfers it to the network
-- [nodestatus](#nodestatus) - Returns node status
-- [encodepubkey](#encodepubkey) - Encodes a public key
-- [decodepubkey](#decodepubkey) - Decodes a public key
-- [payloadencrypt](#payloadencrypt) - Encrypts a text
 - [payloaddecrypt](#payloaddecrypt) - Decrypts a text
-- [getconnections](#getconnections) - Lists all active connections of this node
 - [addnewkey](#addnewkey) - Adds a new key to the Wallet
 - [lock](#lock) - Locks the Wallet
 - [unlock](#unlock) - Unlocks the Wallet
 - [setwalletpassword](#setwalletpassword) - Changes wallet password
-- [stopnode](#stopnode) - Stops the node
-- [startnode](#startnode) - Starts the node
 - [signmessage](#signmessage) - Signs a digest message using a public key (* New on Build 3.0 *)
 - [verifysign](#verifysign) - Verify if a digest message is signed by a public key (* New on Build 3.0 *)
 - [multioperationaddoperation](#multioperationaddoperation) - Adds operations to a multioperation (or creates a new multioperation and adds new operations) (* New on Build 3.0 *)
