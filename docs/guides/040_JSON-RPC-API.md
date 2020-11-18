@@ -157,6 +157,7 @@ An "Operation object" is a JSON object with information about an operation. Fiel
 - `optxt` : String - Human readable operation type
 - `amount` : PASCURRENCY - Amount of coins transferred from `sender_account` to `dest_account` (Only apply when `optype`=1)
 - `fee` : PASCURRENCY - Fee of this operation
+- `fee_s` : String - Fee of this operation as a String
 - `balance` : PASCURRENCY - Balance of `account` after this block is introduced in the Blockchain
   - Note: `balance` is a calculation based on current safebox account balance and previous operations, it's only returned on pending operations and account operations
 - `sender_account` : Integer - Sender account in a transaction (only when `optype` = 1) **DEPRECATED**, use `senders` array instead
@@ -171,10 +172,12 @@ An "Operation object" is a JSON object with information about an operation. Fiel
   - `account` : Sending Account 
   - `n_operation`
   - `amount` : PASCURRENCY - In negative value, due it's outgoing from "account"
+  - `amount_s` : String - amount as a string 
   - `payload` : HEXASTRING
 - `receivers` : ARRAY of objects - When is a transaction or multioperation, this array contains each receiver
   - `account` : Receiving Account 
   - `amount` : PASCURRENCY - In positive value, due it's incoming from a sender to "account"
+  - `amount_s` : String - amount as a string 
   - `payload` : HEXASTRING
 - `changers` : ARRAY of objects - When accounts changed state
   - `account` : changing Account 
@@ -293,7 +296,7 @@ JSON-RPC Error codes will be in a JSON-Object in this format:
 - 1010 - Not found
 - 1015 - Wallet is password protected
 - 1016 - Invalid data
-- 1021 - No permission. You should configure `pascalcoin_daemon.ini` file with a `WHITELIST` including your external IPs, separated by coma, and set `RPC_ALLOWUSEPRIVATEKEYS=1` to allow it.
+- 1021 - No permission. ***Note*** this will actually return an HTTP 400 excpetion. You should configure `pascalcoin_daemon.ini` file with a `WHITELIST` including your external IPs, separated by coma, and set `RPC_ALLOWUSEPRIVATEKEYS=1` to allow it.
 
 ***********************************************************************************
 
@@ -305,7 +308,7 @@ The node has a setting that controls which methods it supports. This is controll
 
 The RPC calls fall into three basic groups. 
 
-- [Information, Support Functions and Raw Operations] These can be called without `RPC_ALLOWUSEPRIVATEKEYS` being set 
+- [Explorer, Support Functions and Raw Operations] These can be called without `RPC_ALLOWUSEPRIVATEKEYS` being set 
 - [Node Information and Control] - Cannot be called without `RPC_ALLOWUSEPRIVATEKEYS` being set, but doesn't require access to the wallet
 - [Wallet Actions] - Cannot be called without `RPC_ALLOWUSEPRIVATEKEYS` being set, but does require access to the wallet. 
 
@@ -316,6 +319,7 @@ The RPC calls fall into three basic groups.
 - [getaccount](#getaccount) - Get an account information
 - [getblock](#getblock) - Get block information
 - [getblocks](#getblocks) - Get a list of blocks (last n blocks, or from start to end)
+- [findblocks](#findblocks) - Get a list of blocks by name/type
 - [getblockcount](#getblockcount) - Get blockchain high in this node
 - [getblockoperation](#getblockoperation) - Get an operation of the block information
 - [getblockoperations](#getblockoperations) - Get all operations of specified block 
@@ -648,6 +652,33 @@ See [getblock](#getblock)
 - `end` : Integers 
 Note: Must use param `last` alone, or `start` and `end`
 
+```js
+// Request
+curl -X POST --data '{"jsonrpc":"2.0","method":"getblocks","last":100,"id":123}' http://localhost:4003
+curl -X POST --data '{"jsonrpc":"2.0","method":"getblocks","start":10000,"end":10500,"id":123}' http://localhost:4003
+
+```
+***********************************************************************************
+### findblocks
+Find blocks by name/type and returns them as an array of "Block Object"
+
+##### Params
+- `payload` : String - Name to search
+- `payloadsearchtype` : String - One of those values
+  - `exact` :
+  - `startswith` : (DEFAULT OPTION)
+  - `not-startswith` :
+  - `contains` :
+  - `not-contains` :
+  - `endswith` :
+  - `not-endswith` :
+- `enc_pubkey` or `b58_pubkey` : HEXASTRING or String - Will return blocks with this public key.
+- `start` : Integer - Start block (by default, 0)
+- `end` : Integer - End block (by default -1, equals to "no limit")
+- `max` : Integer - Max of accounts returned in array (by default, 100)
+
+***********************************************************************************
+
 
 ### getblockcount  
 
@@ -918,12 +949,31 @@ Find accounts by name/type and returns them as an array of "Account Object"
 - `name` : String - If has value, will return the account that match name
 - `type` : Integer - If has value, will return accounts with same type
 - `start` : Integer - Start account (by default, 0) - **NOTE:** Is the "start account number", when executing multiple calls you must set `start` value to the latest returned account number + 1 (Except if searching by public key, see below)
+- `end` : Integer - this will search from `start` to `end`. If end is -1 (default) then it will search to the end
 - `max` : Integer - Max of accounts returned in array (by default, 100)
 - `name` : String - If has value, will return the account matching this name
-- `exact` : Boolean (True by default) - If False and `name` has value will return accounts containing `name` value in it's name (multiple accounts can match)
+- `namesearchtype` : String. Describes the type of search to perform on the account.name with the value specified in `name`. Must be one of
+  - `exact` : `account.name` must match value (DEFAULT OPTION, same as `exact` = true)
+  - `startswith` : `account.name` must start with the value
+  - `not-startswith` : `account.name` must NOT start with
+  - `contains` : `account.name` must contain the value (same as `exact` = false)
+  - `not-contains` : `account.name` must NOT contain the value
+  - `endswith` : `account.name` must end with the value
+  - `not-endswith`  : `account.name` must NOT end with the value
+- `exact` : Boolean ( DEPRECATED see `namesearchtype`, True by default) - If False and `name` has value will return accounts containing `name` value in it's name (multiple accounts can match)
 - `min_balance`,`max_balance` : PASCURRENCY - If have value, will filter by current account balance
 - `enc_pubkey` or `b58_pubkey` : HEXASTRING or String - Will return accounts with this public key. **NOTE:** When searching by public key the `start` param value is the position of indexed public keys list instead of accounts numbers
-
+- `statustype` : String - must be one of these values
+  - `all` : (Default option)
+  - `for-sale`
+  - `for-public-sale`
+  - `for-private-sale`
+  - `for-swap`
+  - `for-account-swap`
+  - `for-coin-swap`
+  - `for-sale-swap`
+  - `not-for-sale-swap`
+- `listed` : Boolean (**DEPRECATED**, use `statustype` instead, False by default) - If True returns only for sale accounts
 ##### Result
 An array of "[Account](#account-object)" objects.
 
@@ -1752,7 +1802,7 @@ Signs a digest message using a public key
 ##### Result
 (False on error)
 - `digest`  : HEXASTRING with the message to sign
-- `enc_pubkey` : HESATRING with the public key that used to sign "digest" data
+- `enc_pubkey` : HEXASTRING with the public key that used to sign "digest" data
 - `signature` : HEXASTRING with signature
 
 ***********************************************************************************
@@ -1770,7 +1820,7 @@ Verify if a digest message is signed by a public key
 ##### Result
 (False on error)
 - `digest`  : HEXASTRING with the message to sign
-- `enc_pubkey` : HESATRING with the public key that used to sign "digest" data
+- `enc_pubkey` : HEXASTRING with the public key that used to sign "digest" data
 - `signature` : HEXASTRING with signature
 
 ***********************************************************************************
