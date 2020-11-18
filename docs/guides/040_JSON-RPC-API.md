@@ -663,7 +663,7 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"getblocks","start":10000,"end":1
 Find blocks by name/type and returns them as an array of "Block Object"
 
 ##### Params
-- `payload` : String - Name to search
+- `payload` : String - value to search block.payload with
 - `payloadsearchtype` : String - One of those values
   - `exact` :
   - `startswith` : (DEFAULT OPTION)
@@ -675,7 +675,7 @@ Find blocks by name/type and returns them as an array of "Block Object"
 - `enc_pubkey` or `b58_pubkey` : HEXASTRING or String - Will return blocks with this public key.
 - `start` : Integer - Start block (by default, 0)
 - `end` : Integer - End block (by default -1, equals to "no limit")
-- `max` : Integer - Max of accounts returned in array (by default, 100)
+- `max` : Integer - Max of blocks returned in array (by default, 100)
 
 ***********************************************************************************
 
