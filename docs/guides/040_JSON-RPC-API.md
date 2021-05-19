@@ -203,7 +203,6 @@ An "Operation object" is a JSON object with information about an operation. Fiel
   - 1 = Transaction 
   - 2 = Change key
   - 3 = Recover founds (lost keys)
-<<<<<<< 34811f7049b465e964e73d7808e7ba744d5a3f97
   - 4 = List account for sale
   - 5 = Delist account (not for sale)
   - 6 = Buy account
@@ -211,11 +210,6 @@ An "Operation object" is a JSON object with information about an operation. Fiel
   - 8 = Change account info
   - 9 = Multioperation (* New on Build 3.0 *)
   - 10 = Data operation (* New on Build 4.0 *)
-=======
-  - 4 = Account for sale
-  - 6 = Account purchased
-  - 8 = Account name changed
->>>>>>> Added optype information 4,6 and 8.
 - `account` : Integer - Account affected by this operation. Note: A transaction has 2 affected accounts.
 - `optxt` : String - Human readable operation type
 - `amount` : Currency - Amount of coins transferred from `sender_account` to `dest_account` (Only apply when `optype`=1)
@@ -237,11 +231,42 @@ An "Operation object" is a JSON object with information about an operation. Fiel
   - `amount` : Currency - In negative value, due it's outgoing from "account"
   - `amount_s` : String - amount as a string 
   - `payload` : HEXASTRING
+  - `payload_type` : Byte, describes the encryption and encoding of the Payload. Each bit represents different property of payload and some properties can be combined
+    - 00000001 Unencrypted, public payload
+    - 00000010 ECIES encrypted using recipient accounts public key
+    - 00000100 ECIES encrypted using sender accounts public key
+    - 00001000 AES encrypted using password
+    - 00010000 Payload data encoded in ASCII
+    - 00100000 Payload data encoded in HEX
+    - 01000000 Payload data encoded in Base58
+    - 10000000 E-PASA addressed by account name (not number)
+  - `account_epasa` : Epasa of the operation
+  - `unenc_payload` : Unencrypted payload
+  - `unenc_hexpayload` : Unencrypted payload in HEXSTRING
+  - `data` : Data object - additional information used in DataOperations (Related documentation - PIP-0033: DATA operation RPC implementation: https://www.pascalcoin.org/development/pips/pip-0033)
+    - `id` : GUID created by the sender, wrapped inside brackets {}.
+    - `sequence` : Integer: Sequence is for chaining multiple data packets together into a logical blob.
+    - `type` : Integer - Type of the message.
+      - 0 : ChatMessage
+      - 1 : PrivateMessage
+      - 2 : File
 - `receivers` : ARRAY of objects - When is a transaction or multioperation, this array contains each receiver
   - `account` : Receiving Account 
   - `amount` : Currency - In positive value, due it's incoming from a sender to "account"
   - `amount_s` : String - amount as a string 
   - `payload` : HEXASTRING
+  - `payload_type` : Byte, describes the encryption and encoding of the Payload. Each bit represents different property of payload and some properties can be combined
+    - 00000001 Unencrypted, public payload
+    - 00000010 ECIES encrypted using recipient accounts public key
+    - 00000100 ECIES encrypted using sender accounts public key
+    - 00001000 AES encrypted using password
+    - 00010000 Payload data encoded in ASCII
+    - 00100000 Payload data encoded in HEX
+    - 01000000 Payload data encoded in Base58
+    - 10000000 E-PASA addressed by account name (not number)
+  - `account_epasa` : Epasa of the operation
+  - `unenc_payload` : Unencrypted payload
+  - `unenc_hexpayload` : Unencrypted payload in HEXSTRING
 - `changers` : ARRAY of objects - When accounts changed state
   - `account` : changing Account 
   - `n_operation`
@@ -252,6 +277,7 @@ An "Operation object" is a JSON object with information about an operation. Fiel
   - `account_price` : Currency - If is listed for sale (public or private) will show account price
   - `locked_until_block` : If is listed for private sale will show block locked
   - `fee` : Currency - In negative value, due it's outgoing from "account"
+  - `changes` : Description of the change
 
 ***********************************************************************************
 
@@ -261,23 +287,44 @@ A "Multioperation object" is a JSON object with information about a multioperati
 - `rawoperations` : String - Hex encoded Single multioperation in RAW format
 - `senders`: ARRAY of JSON Objects, each object with fields:
   - `account` : Sending Account 
-  - `n_operation`: Integer
+  - `n_operation`: Integer - if not provided, will use current safebox n_operation+1 value (on online wallets)
   - `amount` : In negative value, due it's outgoing from "account"
   - `payload` : HEXASTRING
+  - `payload_type` : Byte, describes the encryption and encoding of the Payload. Each bit represents different property of payload and some properties can be combined
+		- 00000001 Unencrypted, public payload
+        - 00000010 ECIES encrypted using recipient accounts public key
+		- 00000100 ECIES encrypted using sender accounts public key
+		- 00001000 AES encrypted using password
+        - 00010000 Payload data encoded in ASCII
+		- 00100000 Payload data encoded in HEX
+		- 01000000 Payload data encoded in Base58
+		- 10000000 E-PASA addressed by account name (not number) 
 - `receivers`: ARRAY of JSON Objects, each object with fields:
   - `account` : Receiving Account 
   - `amount` : In positive value, due it's incoming from a sender to "account"
   - `payload` : HEXASTRING
+  - `payload_type` : Byte, describes the encryption and encoding of the Payload. Each bit represents different property of payload and some properties can be combined
+		- 00000001 Unencrypted, public payload
+        - 00000010 ECIES encrypted using recipient accounts public key
+		- 00000100 ECIES encrypted using sender accounts public key
+		- 00001000 AES encrypted using password
+        - 00010000 Payload data encoded in ASCII
+		- 00100000 Payload data encoded in HEX
+		- 01000000 Payload data encoded in Base58
+		- 10000000 E-PASA addressed by account name (not number) 
 - `changers` : ARRAY of JSON Objects, each object with fields:
   - `account` : changing Account 
-  - `n_operation`
-  - `new_enc_pubkey` : If public key is changed
-  - `new_name` : If name is changed
-  - `new_type` : If type is changed
+  - `n_operation` : Integer - if not provided, will use current safebox n_operation+1 value (on online wallets)
+  - `new_enc_pubkey` : String - If provided will update Public key of "account" when the operation is executed
+  - `new_name` : String - If provided will change account name when the operation is executed
+  - `new_type` : Integer - If provided will change account type when the operation is executed
 - `amount` : Currency Amount received by receivers
 - `fee` : Currency Equal to "total send" - "total received"
 - `digest` : HEXASTRING value of the digest that must be signed
 - `signed_count` : Integer with info about how many accounts are signed. Does not check if signature is valid for a multioperation not included in blockchain 
+- `receivers_count` : Integer - number of receivers in the multioperation.
+- `changesinfo_count` : Integer - number of changes
+- `signed_count` : Integer with info about how many accounts are signed.Does not check if signature is valid for a multioperation not included in blockchain
 - `not_signed_count` : Integer with info about how many accounts are pending to be signed
 - `signed_can_execute`	: Boolean. True if everybody signed. Does not check if MultiOperation is well formed or can be added to Network because is an offline call
 
@@ -323,6 +370,36 @@ A "Raw operations object" is a JSON object with information about a signed opera
 - `amount` : Currency - Total amount
 - `fee` : Currency - Total fee
 - `rawoperations` : String - Hex encoded This is the operations in raw format
+
+***********************************************************************************
+
+### EPasa object
+
+Contains information about an Epasa
+- `account_epasa` : String - Encoded EPASA with extended checksum
+- `account` : Integer - Account number
+- `payload_method` : String - Encode type of the item payload
+  - `none` : Not encoded. Will be visible for everybody
+  - `dest` : Using Public key of "target" account. Only "target" will be able to decrypt this payload
+  - `sender` : Using sender Public key. Only "sender" will be able to decrypt this payload
+  - `aes` : Encrypted data using `pwd` param
+- `pwd` : String - Password provided only if payload_method = "aes"
+- `payload_encode` : String - Payload encoding
+  - `string`
+  - `hexa`
+  - `base58`
+- `account_epasa_classic` : String - Encoded EPASA without extended checksum
+- `payload` : HEXASTRING with the payload data
+- `payload_type` : Byte, describes the encryption and encoding of the Payload. Each bit represents different property of payload and some properties can be combined
+  - 00000001 Unencrypted, public payload
+  - 00000010 ECIES encrypted using recipient accounts public key
+  - 00000100 ECIES encrypted using sender accounts public key
+  - 00001000 AES encrypted using password
+  - 00010000 Payload data encoded in ASCII
+  - 00100000 Payload data encoded in HEX
+  - 01000000 Payload data encoded in Base58
+  - 10000000 E-PASA addressed by account name (not number) 
+- `is_pay_to_key` : Boolean - True if EPasa is a Pay To Key format like @[Base58Pubkey]
 
 ***********************************************************************************
 
@@ -434,6 +511,14 @@ The RPC calls fall into three basic groups.
 - [multioperationsignoffline](#multioperationsignoffline) - This method will sign a Multioperation found in a "rawoperations", must provide all n_operation info of each signer because can work in cold wallets (* New on Build 3.0 *)
 - [multioperationsignonline](#multioperationsignonline) - This method will sign a Multioperation found in a "rawoperations" based on current safebox state public keys (* New on Build 3.0 *)
 - [operationsdelete](#operationsdelete) - This method will delete an operation included in a Raw operations object (* New on Build 3.0 *)
+- [checkepasa](#checkepasa) - Creates an EPasa object from valid ePasa string. Returns the "EPasa object". (* Fixed on Build 5.6 *)
+- [validateepasa](#validateepasa) - Creates an account Epasa object with provided data. Returns the "EPasa Object" (* Fixed on Build 5.6 *)
+
+#### DataOperation 
+Documentation of PIP-0033: DATA operation RPC implementation: https://www.pascalcoin.org/development/pips/pip-0033
+- [senddata](#senddata) - Sends data to another account (* Fixed on Build 5.5 *)
+- [signdata](#signdata) - Creates and signs a "DATA" operation for later use (* New on Build 5.0 *)
+- [finddataoperations](#finddataoperations) - Searches for DataOperations in the blockchain (* Fixed on Build 5.4 *).
 
  ***********************************************************************************
  
@@ -2070,3 +2155,324 @@ curl -X POST --data '{"jsonrpc":"2.0","id":"100","method":"operationsdelete","pa
 }
 ```
 
+***********************************************************************************
+
+### checkepasa
+Check that epasa parameter contains a valid E-PASA format
+
+##### Params
+- `account_epasa` : EPasa string
+
+##### Result
+If transaction is successfull will return a JSON Object in "[EPasa object](#epasa-object)" format.
+Otherwise, will return a JSON-RPC error code with description
+
+##### Example
+Correct example
+```js
+// Request
+curl -X POST --data '{"jsonrpc":"2.0","method":"checkepasa","params":{"account_epasa":"834853-50[\"Hello friend!\"]"},"id":1}' http://localhost:4003
+
+// Result
+{
+  "result":{
+    "account_epasa":"834853-50[\"Hello friend!\"]:6941",
+    "account_epasa_classic":"834853-50[\"Hello friend!\"]",
+    "account":834853,
+    "payload_method":"none",
+    "payload_encode":"string",
+    "payload":"48656C6C6F20667269656E6421",
+    "payload_type":17,
+    "is_pay_to_key":false
+  },
+  "id":1,
+  "jsonrpc":"2.0"
+}
+```
+
+***********************************************************************************
+
+### validateepasa
+Creates an account epasa with the data provided in the parameters.
+
+##### Params
+- `account` : String - Valid number or account name(Use @ for a PayToKey)
+- `payloadMethod` : String - "none" | "dest" | "sender" | "aes"
+- `payload` : HEXASTRING with the payload data
+- `password` : String - Will be used if PayloadMethod = Aes
+- `encodingType` : String - "string"(default) | "hexa" | "base58"
+
+##### Result
+If transaction is successfull will return a JSON Object in "[EPasa object](#epasa-object)" format.
+Otherwise, will return a JSON-RPC error code with description
+
+##### Example
+Correct example
+```js
+// Request
+curl -X POST --data '{"jsonrpc":"2.0","method":"validateepasa","params":{"account":"834853","payload_method":"none","payload_encode":"string","payload":"54657374"},"id":1}' http://localhost:4003
+
+// Result
+{
+    "result":{
+        "account_epasa":"834853-50[\"Test\"]:7d72",
+        "account_epasa_classic":"834853-50[\"Test\"]",
+        "account":834853,
+        "payload_method":"none",
+        "payload_encode":"string",
+        "payload":"54657374",
+        "payload_type":17,
+        "is_pay_to_key":false
+    },
+    "id":1,
+    "jsonrpc":"2.0"
+}
+```
+
+***********************************************************************************
+
+### senddata
+DataOperation - sends data to another account, can include Pasc. Method [sendto] does not accept operations with has amount of 0 Pasc, DataOperations supports amount of 0 Pasc and contains additional information to help assemble together bigger message which was sent to Pascal network in smaller parts. If the amount of Pasc is included in DataOperation, it is send by setting sequence=0. For more information on DataOperations, please see PIP-0033: DATA operation RPC implementation: https://www.pascalcoin.org/development/pips/pip-0033
+
+##### Params
+- `sender` : Integer - Sender account
+- `target` : Integer - Destination account
+- `guid` : GUID created by the sender. Guid should be wrapped in brackets {}
+- `signer` : Integer - Account number of the signer which pays the fee
+- `data_type` : Integer - Type of the message (by default = 0 - Chat message))
+- `data_sequence` : Integer - Sequence is for chaining multiple data packets together into a logical blob (by default = 0)
+- `amount` : Currency - Coins to be transferred (default = 0)
+- `fee` : Currency - Fee of the operation (default = 0)
+- `payload` : String - Hex encoded Payload "item" that will be included in this operation
+- `payload_method` : String - Encode type of the item payload  
+  - `none` : (default) :Not encoded. Will be visible for everybody
+  - `dest` : Using Public key of "target" account. Only "target" will be able to decrypt this payload
+  - `sender` : Using sender Public key. Only "sender" will be able to decrypt this payload
+  - `aes` : Encrypted data using `pwd` param
+- `pwd` : String - Used to encrypt payload with `aes` as a `payload_method`. If none equals to empty password
+
+##### Result
+If transaction is successfull will return a JSON Object in "[Operation Object](#operation-object)" format.
+Otherwise, will return a JSON-RPC error code with description
+
+##### Example
+Correct example
+```js
+// Request
+curl -X POST --data '{"jsonrpc":"2.0","method":"senddata","params":{"sender":796500,"target":834853,"guid":"{634da708-51fd-4940-a346-5bcd2aeaa2b9}","data_type":0,"fee":0,"payload":"48656C6C6F20776F726C6421"},"id":1}' http://localhost:4003
+
+// Result
+{
+  "result":{
+    "block":0,
+    "time":0,
+    "opblock":-1,
+    "maturation":null,
+    "optype":10,
+    "subtype":102,
+    "account":796500,
+    "signer_account":796500,
+    "n_operation":25,
+    "senders":[
+      {
+        "account":796500,
+        "account_epasa":"796500-33[\"Hello world!\"]:9de3",
+        "unenc_payload":"Hello world!",
+        "unenc_hexpayload":"48656C6C6F20776F726C6421",
+        "n_operation":25,
+        "amount":0.0000,
+        "amount_s":"0.0000",
+        "payload":"48656C6C6F20776F726C6421",
+        "payload_type":17,
+        "data":{
+          "id":"\u007B634DA708-51FD-4940-A346-5BCD2AEAA2B9\u007D",
+          "sequence":0,
+          "type":0
+        }
+      }
+    ],
+    "receivers":[
+      {
+        "account":834853,
+        "account_epasa":"834853-50[\"Hello world!\"]:ae19",
+        "unenc_payload":"Hello world!",
+        "unenc_hexpayload":"48656C6C6F20776F726C6421",
+        "amount":0.0000,
+        "amount_s":"0.0000",
+        "payload":"48656C6C6F20776F726C6421",
+        "payload_type":17
+      }
+    ],
+    "changers":[],
+    "optxt":"OpData from:796500 to:834853 type:0 sequence:0 Amount:0.0000",
+    "fee":0.0000,
+    "fee_s":"0.0000",
+    "amount":0.0000,
+    "amount_s":"0.0000",
+    "payload":"48656C6C6F20776F726C6421",
+    "payload_type":17,
+    "balance":0.0000,
+    "ophash":"0000000054270C00190000005FACDC0605CEF199B7FAE461C3DC08C88CCEA50C",
+    "old_ophash":""
+  },
+  "id":1,
+  "jsonrpc":"2.0"
+}
+```
+
+***********************************************************************************
+
+### signdata
+Creates and signs a "DATA" operation for later use.
+
+##### Params
+- `sender` : Integer - The sender of the operation.
+- `target` : Integer - The account where the DATA operation is send to.
+- `guid` : A 16 Bytes GUID in 8-4-4-4-12 format. If null or not given, the node will generate a UUID V4 (random). Guid should be wrapped in brackets {}
+- `signer` : Integer - Account number of the signer which pays the .
+- `data_type` : Integer - Type of the message (by default = 0 - Chat message))
+- `data_sequence` : Integer - Sequence is for chaining multiple data packets together into a logical blob (by default = 0)
+- `last_n_operation` : Integer - Last value of n_operation of the signerAccount (or senderAccount or receiverAccount)
+- `amount` : Currency - Coins to be transferred (default = 0)
+- `fee` : Currency - Fee of the operation (default = 0)
+- `rawoperations` : HEXASTRING(optional) - If we want to add a sign operation with other previous operations, here we must put previous rawoperations result
+- `signer_enc_pubkey` : HEXASTRING - The current public key of signerAccount in encoded format
+- `signer_b58_pubkey` : HEXASTRING - The current public key of signerAccount in b58 format
+- `target_enc_pubkey` : HEXASTRING - The current public key of receiverAccount in encoded format
+- `target_b58_pubkey` : HEXASTRING - The current public key of receiverAccount in b58 format
+- `sender_enc_pubkey` : HEXASTRING - The current public key of senderAccount in encoded format
+- `sender_b58_pubkey` : HEXASTRING - The current public key of senderAccount in b58 format
+- `payload` : String - Hex encoded Payload "item" that will be included in this operation
+- `payload_method` : String - Encode type of the item payload  
+  - `none` : (default) :Not encoded. Will be visible for everybody
+  - `dest` : Using Public key of "target" account. Only "target" will be able to decrypt this payload
+  - `sender` : Using sender Public key. Only "sender" will be able to decrypt this payload
+  - `aes` : Encrypted data using `pwd` param
+- `pwd` : String - Used to encrypt payload with `aes` as a `payload_method`. If none equals to empty password
+
+##### Result
+Wallet must be unlocked and sender private key (searched with provided public key) must be in wallet.
+No other checks are made (no checks for valid target, valid n_operation, valid amount or fee ...)
+Returns a [Raw Operations Object](#raw-operations-object)
+
+##### Example
+Correct example
+```js
+// Request
+curl -X POST --data '{"jsonrpc":"2.0","method":"signdata","params":{"signer":796500,"sender":796500,"target":834853,"guid":"{B293F4CB-70FF-4970-861A-420EF0A6DD9B}","data_type":1,"data_sequence":0,"last_n_operation":25,"fee":0,"signer_b58_pubkey":"2jR5AN61YhFUdcxEGhrU9BX5vPHpJPG8GD44dHmFs15zrMAQ7oySpUHCxeYCfwKWW7VeKqJ3NJjrrwEHPHRBeMGuTvp395t7trnxmLcpnazQen8VP","payload":"48656C6C6F20776F726C6421","payload_method":"none"},"id":1}' http://localhost:4003
+
+// Result
+{
+  "result":{
+    "operations":1,
+    "amount":0.0000,
+    "amount_s":"0.0000",
+    "fee":0.0000,
+    "fee_s":"0.0000",
+    "rawoperations":"010000000A00050054270C0054270C0025BD0C001A000000CBF493B2FF707049861A420EF0A6DD9B0100000000000000000000000000000000000000110C0048656C6C6F20776F726C64212400014220D959A3A14BB9D9E23917679AB5E26270B5CB4D010BE9BD12EC315EEB109EEAFB40240001CB6B0B2D1E55C226CC981AEF47FF7F50B198FC3696CABF7DAAB16A3A691EBA173C2EC6"
+  },
+  "id":1,
+  "jsonrpc":"2.0"
+}
+```
+
+***********************************************************************************
+
+### finddataoperations
+Searches for DataOperations in the blockchain.
+
+##### Params
+- `sender` : Integer - The sender of the operation.
+- `target` : Integer - The account where the DATA operation is send to.
+- `guid` : A 16 Bytes GUID in 8-4-4-4-12 format. If null or not given, the node will generate a UUID V4 (random). Guid should be wrapped in brackets {}
+- `signer` : Integer - Account number of the signer which pays the .
+- `data_type` : Integer - Type of the message (by default = 0 - Chat message))
+- `data_sequence` : Integer - Sequence is for chaining multiple data packets together into a logical blob (by default = 0)
+- `last_n_operation` : Integer - Last value of n_operation of the signerAccount (or senderAccount or receiverAccount)
+- `amount` : Currency - Coins to be transferred (default = 0)
+- `fee` : Currency - Fee of the operation (default = 0)
+- `rawoperations` : HEXASTRING(optional) - If we want to add a sign operation with other previous operations, here we must put previous rawoperations result
+- `signer_enc_pubkey` : HEXASTRING - The current public key of signerAccount in encoded format
+- `signer_b58_pubkey` : HEXASTRING - The current public key of signerAccount in b58 format
+- `target_enc_pubkey` : HEXASTRING - The current public key of receiverAccount in encoded format
+- `target_b58_pubkey` : HEXASTRING - The current public key of receiverAccount in b58 format
+- `sender_enc_pubkey` : HEXASTRING - The current public key of senderAccount in encoded format
+- `sender_b58_pubkey` : HEXASTRING - The current public key of senderAccount in b58 format
+- `payload` : String - Hex encoded Payload "item" that will be included in this operation
+- `payload_method` : String - Encode type of the item payload  
+  - `none` : (default) :Not encoded. Will be visible for everybody
+  - `dest` : Using Public key of "target" account. Only "target" will be able to decrypt this payload
+  - `sender` : Using sender Public key. Only "sender" will be able to decrypt this payload
+  - `aes` : Encrypted data using `pwd` param
+- `pwd` : String - Used to encrypt payload with `aes` as a `payload_method`. If none equals to empty password
+
+##### Result
+If transaction is successfull will return a JSON Array with "[Operation Object](#operation-object)" items.
+Otherwise, will return a JSON-RPC error code with description
+
+##### Example
+Correct example
+```js
+// Request
+curl -X POST --data '{"jsonrpc":"2.0","method":"finddataoperations","params":{"sender":796500,"target":834853,"guid":"{b293f4cb-70ff-4970-861a-420ef0a6dd9b}"},"id":1}' http://localhost:4003
+
+// Result
+{
+  "result":[
+  {
+    "block":534096,
+    "time":0,
+    "opblock":12,
+    "maturation":2,
+    "optype":10,
+    "subtype":102,
+    "account":796500,
+    "signer_account":796500,
+    "n_operation":26,
+    "senders":[
+      {
+        "account":796500,
+        "account_epasa":"796500-33[\"Hello world!\"]:9de3",
+        "unenc_payload":"Hello world!",
+        "unenc_hexpayload":"48656C6C6F20776F726C6421",
+        "n_operation":26,
+        "amount":0.0000,
+        "amount_s":"0.0000",
+        "payload":"48656C6C6F20776F726C6421",
+        "payload_type":17,
+        "data":{
+          "id":"\u007BB293F4CB-70FF-4970-861A-420EF0A6DD9B\u007D",
+          "sequence":0,
+          "type":1
+        }
+      }
+    ],
+    "receivers":[
+      {
+        "account":834853,
+        "account_epasa":"834853-50[\"Hello world!\"]:ae19",
+        "unenc_payload":"Hello world!",
+        "unenc_hexpayload":"48656C6C6F20776F726C6421",
+        "amount":0.0000,
+        "amount_s":"0.0000",
+        "payload":"48656C6C6F20776F726C6421",
+        "payload_type":17
+      }
+    ],
+    "changers":[],
+    "optxt":"OpData from:796500 to:834853 type:1 sequence:0 Amount:0.0000",
+    "fee":0.0000,
+    "fee_s":"0.0000",
+    "amount":0.0000,
+    "amount_s":"0.0000",
+    "payload":"48656C6C6F20776F726C6421",
+    "payload_type":17,
+    "ophash":"5026080054270C001A000000DBAA03BE2A402636BBF7B9CE7ECDB76F7C1545BA"
+  }
+  ],
+  "id":1,
+  "jsonrpc":"2.0"
+}
+```
+
+***********************************************************************************
