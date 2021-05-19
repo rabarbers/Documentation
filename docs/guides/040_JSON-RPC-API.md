@@ -203,7 +203,6 @@ An "Operation object" is a JSON object with information about an operation. Fiel
   - 1 = Transaction 
   - 2 = Change key
   - 3 = Recover founds (lost keys)
-<<<<<<< 34811f7049b465e964e73d7808e7ba744d5a3f97
   - 4 = List account for sale
   - 5 = Delist account (not for sale)
   - 6 = Buy account
@@ -211,11 +210,6 @@ An "Operation object" is a JSON object with information about an operation. Fiel
   - 8 = Change account info
   - 9 = Multioperation (* New on Build 3.0 *)
   - 10 = Data operation (* New on Build 4.0 *)
-=======
-  - 4 = Account for sale
-  - 6 = Account purchased
-  - 8 = Account name changed
->>>>>>> Added optype information 4,6 and 8.
 - `account` : Integer - Account affected by this operation. Note: A transaction has 2 affected accounts.
 - `optxt` : String - Human readable operation type
 - `amount` : Currency - Amount of coins transferred from `sender_account` to `dest_account` (Only apply when `optype`=1)
@@ -261,23 +255,44 @@ A "Multioperation object" is a JSON object with information about a multioperati
 - `rawoperations` : String - Hex encoded Single multioperation in RAW format
 - `senders`: ARRAY of JSON Objects, each object with fields:
   - `account` : Sending Account 
-  - `n_operation`: Integer
+  - `n_operation`: Integer - if not provided, will use current safebox n_operation+1 value (on online wallets)
   - `amount` : In negative value, due it's outgoing from "account"
   - `payload` : HEXASTRING
+  - `payload_type` : Integer, describes the encryption and encoding of the Payload. Each bit represents different property of payload and some properties can be combined
+		- 00000001 Unencrypted, public payload
+        - 00000010 ECIES encrypted using recipient accounts public key
+		- 00000100 ECIES encrypted using sender accounts public key
+		- 00001000 AES encrypted using password
+        - 00010000 Payload data encoded in ASCII
+		- 00100000 Payload data encoded in HEX
+		- 01000000 Payload data encoded in Base58
+		- 10000000 E-PASA addressed by account name (not number) 
 - `receivers`: ARRAY of JSON Objects, each object with fields:
   - `account` : Receiving Account 
   - `amount` : In positive value, due it's incoming from a sender to "account"
   - `payload` : HEXASTRING
+  - `payload_type` : Integer, describes the encryption and encoding of the Payload. Each bit represents different property of payload and some properties can be combined
+		- 00000001 Unencrypted, public payload
+        - 00000010 ECIES encrypted using recipient accounts public key
+		- 00000100 ECIES encrypted using sender accounts public key
+		- 00001000 AES encrypted using password
+        - 00010000 Payload data encoded in ASCII
+		- 00100000 Payload data encoded in HEX
+		- 01000000 Payload data encoded in Base58
+		- 10000000 E-PASA addressed by account name (not number) 
 - `changers` : ARRAY of JSON Objects, each object with fields:
   - `account` : changing Account 
-  - `n_operation`
-  - `new_enc_pubkey` : If public key is changed
-  - `new_name` : If name is changed
-  - `new_type` : If type is changed
+  - `n_operation` : Integer - if not provided, will use current safebox n_operation+1 value (on online wallets)
+  - `new_enc_pubkey` : String - If provided will update Public key of "account" when the operation is executed
+  - `new_name` : String - If provided will change account name when the operation is executed
+  - `new_type` : Integer - If provided will change account type when the operation is executed
 - `amount` : Currency Amount received by receivers
 - `fee` : Currency Equal to "total send" - "total received"
 - `digest` : HEXASTRING value of the digest that must be signed
 - `signed_count` : Integer with info about how many accounts are signed. Does not check if signature is valid for a multioperation not included in blockchain 
+- `receivers_count` : Integer - number of receivers in the multioperation.
+- `changesinfo_count` : Integer - number of changes
+- `signed_count` : Integer with info about how many accounts are signed.Does not check if signature is valid for a multioperation not included in blockchain
 - `not_signed_count` : Integer with info about how many accounts are pending to be signed
 - `signed_can_execute`	: Boolean. True if everybody signed. Does not check if MultiOperation is well formed or can be added to Network because is an offline call
 
