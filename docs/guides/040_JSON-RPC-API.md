@@ -2388,23 +2388,9 @@ Searches for DataOperations in the blockchain.
 - `signer` : Integer - Account number of the signer which pays the .
 - `data_type` : Integer - Type of the message (by default = 0 - Chat message))
 - `data_sequence` : Integer - Sequence is for chaining multiple data packets together into a logical blob (by default = 0)
-- `last_n_operation` : Integer - Last value of n_operation of the signerAccount (or senderAccount or receiverAccount)
-- `amount` : Currency - Coins to be transferred (default = 0)
-- `fee` : Currency - Fee of the operation (default = 0)
-- `rawoperations` : HEXASTRING(optional) - If we want to add a sign operation with other previous operations, here we must put previous rawoperations result
-- `signer_enc_pubkey` : HEXASTRING - The current public key of signerAccount in encoded format
-- `signer_b58_pubkey` : HEXASTRING - The current public key of signerAccount in b58 format
-- `target_enc_pubkey` : HEXASTRING - The current public key of receiverAccount in encoded format
-- `target_b58_pubkey` : HEXASTRING - The current public key of receiverAccount in b58 format
-- `sender_enc_pubkey` : HEXASTRING - The current public key of senderAccount in encoded format
-- `sender_b58_pubkey` : HEXASTRING - The current public key of senderAccount in b58 format
-- `payload` : String - Hex encoded Payload "item" that will be included in this operation
-- `payload_method` : String - Encode type of the item payload  
-  - `none` : (default) :Not encoded. Will be visible for everybody
-  - `dest` : Using Public key of "target" account. Only "target" will be able to decrypt this payload
-  - `sender` : Using sender Public key. Only "sender" will be able to decrypt this payload
-  - `aes` : Encrypted data using `pwd` param
-- `pwd` : String - Used to encrypt payload with `aes` as a `payload_method`. If none equals to empty password
+- `start` : Integer(optional, default = 0)
+- `max` : Integer(optional, default = 100) Limits the number of items in the output.
+
 
 ##### Result
 If transaction is successfull will return a JSON Array with "[Operation Object](#operation-object)" items.
