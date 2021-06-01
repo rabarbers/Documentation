@@ -2391,7 +2391,6 @@ Searches for DataOperations in the blockchain.
 - `start` : Integer(optional, default = 0)
 - `max` : Integer(optional, default = 100) Limits the number of items in the output.
 
-
 ##### Result
 If transaction is successfull will return a JSON Array with "[Operation Object](#operation-object)" items.
 Otherwise, will return a JSON-RPC error code with description
