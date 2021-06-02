@@ -802,8 +802,8 @@ Note: Must use param `last` alone, or `start` and `end`
 
 ```js
 // Request
-curl -X POST --data '{"jsonrpc":"2.0","method":"getblocks","last":100,"id":123}' http://localhost:4003
-curl -X POST --data '{"jsonrpc":"2.0","method":"getblocks","start":10000,"end":10500,"id":123}' http://localhost:4003
+curl -X POST --data '{"jsonrpc":"2.0","method":"getblocks","params":{"last":100},"id":123}' http://localhost:4003
+curl -X POST --data '{"jsonrpc":"2.0","method":"getblocks","params":{"start":10000, "end":10500},"id":123}' http://localhost:4003
 
 ```
 ***********************************************************************************
